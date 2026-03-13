@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>Logbook — Your Personal Daily Commit Tracker</title>
+ <meta name="description"
+  content="Track what you learn, build, and do — every day. Logbook is your private developer journal with a calendar, heatmap, and insights." />
+ <link rel="preconnect" href="https://fonts.googleapis.com" />
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+ <link
+  href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet" />
+
+ <style>
+  *,
+  *::before,
+  *::after {
+   box-sizing: border-box;
+   margin: 0;
+   padding: 0;
+  }
+
+  :root {
+   --bg: #08080f;
+   --surface: #0e0e1a;
+   --card: #13131f;
+   --border: #1c1c2e;
+   --hover: #1a1a2e;
+   --primary: #e2e2f0;
+   --secondary: #8888a8;
+   --muted: #44445a;
+   --accent: #818cf8;
+   --accent-dim: #4f56c4;
+   --note: #818cf8;
+   --skill: #34d399;
+   --action: #f59e0b;
+   --event: #f472b6;
+  }
+
+  html {
+   scroll-behavior: smooth;
+  }
+
+  body {
+   background: var(--bg);
+   color: var(--primary);
+   font-family: 'DM Sans', sans-serif;
+   -webkit-font-smoothing: antialiased;
+   overflow-x: hidden;
+  }
+
+  /* ── Grid bg ── */
+  body::before {
+   content: '';
+   position: fixed;
+   inset: 0;
+   background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+   background-size: 48px 48px;
+   opacity: 0.3;
+   pointer-events: none;
+   z-index: 0;
+  }
+
+  /* ── Scroll reveal ── */
+  .reveal {
+   opacity: 0;
+   transform: translateY(28px);
+   transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+   opacity: 1;
+   transform: translateY(0);
+  }
+
+  .reveal-delay-1 {
+   transition-delay: 0.1s;
+  }
+
+  .reveal-delay-2 {
+   transition-delay: 0.2s;
+  }
+
+  .reveal-delay-3 {
+   transition-delay: 0.3s;
+  }
+
+  .reveal-delay-4 {
+   transition-delay: 0.4s;
+  }
+
+  /* ── Nav ── */
+  nav {
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   z-index: 100;
+   border-bottom: 1px solid transparent;
+   transition: border-color 0.3s, background 0.3s;
+  }
+
+  nav.scrolled {
+   background: rgba(8, 8, 15, 0.85);
+   backdrop-filter: blur(12px);
+   border-color: var(--border);
+  }
+
+  .nav-inner {
+   max-width: 1100px;
+   margin: 0 auto;
+   padding: 0 2rem;
+   height: 60px;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+  }
+
+  .nav-logo {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   text-decoration: none;
+  }
+
+  .nav-logo-icon {
+   width: 30px;
+   height: 30px;
+   background: var(--card);
+   border: 1px solid var(--border);
+   border-radius: 8px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-size: 14px;
+  }
+
+  .nav-logo-text {
+   font-family: 'Syne', sans-serif;
+   font-weight: 700;
+   font-size: 1rem;
+   color: var(--primary);
+   letter-spacing: -0.02em;
+  }
+
+  .nav-cta {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+   padding: 8px 20px;
+   background: var(--accent);
+   color: var(--bg);
+   border-radius: 8px;
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.75rem;
+   font-weight: 500;
+   text-decoration: none;
+   transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .nav-cta:hover {
+   opacity: 0.85;
+   transform: translateY(-1px);
+  }
+
+  /* ── Hero ── */
+  .hero {
+   position: relative;
+   z-index: 1;
+   min-height: 100vh;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   padding: 8rem 2rem 4rem;
+   text-align: center;
+  }
+
+  /* Radial glow */
+  .hero::after {
+   content: '';
+   position: absolute;
+   top: 20%;
+   left: 50%;
+   transform: translateX(-50%);
+   width: 600px;
+   height: 400px;
+   background: radial-gradient(ellipse, rgba(129, 140, 248, 0.12) 0%, transparent 70%);
+   pointer-events: none;
+  }
+
+  .hero-badge {
+   display: inline-flex;
+   align-items: center;
+   gap: 8px;
+   padding: 6px 14px;
+   background: rgba(129, 140, 248, 0.08);
+   border: 1px solid rgba(129, 140, 248, 0.2);
+   border-radius: 100px;
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.7rem;
+   color: var(--accent);
+   margin-bottom: 2rem;
+   letter-spacing: 0.05em;
+   animation: fadeDown 0.6s ease both;
+  }
+
+  .hero-badge-dot {
+   width: 6px;
+   height: 6px;
+   background: var(--accent);
+   border-radius: 50%;
+   animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+
+   0%,
+   100% {
+    opacity: 1;
+    transform: scale(1);
+   }
+
+   50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+   }
+  }
+
+  @keyframes fadeDown {
+   from {
+    opacity: 0;
+    transform: translateY(-12px);
+   }
+
+   to {
+    opacity: 1;
+    transform: translateY(0);
+   }
+  }
+
+  @keyframes fadeUp {
+   from {
+    opacity: 0;
+    transform: translateY(20px);
+   }
+
+   to {
+    opacity: 1;
+    transform: translateY(0);
+   }
+  }
+
+  .hero-title {
+   font-family: 'Syne', sans-serif;
+   font-size: clamp(2.8rem, 7vw, 5.5rem);
+   font-weight: 800;
+   line-height: 1.05;
+   letter-spacing: -0.03em;
+   color: var(--primary);
+   max-width: 800px;
+   animation: fadeUp 0.7s 0.1s ease both;
+  }
+
+  .hero-title em {
+   font-style: normal;
+   color: var(--accent);
+  }
+
+  .hero-sub {
+   margin-top: 1.5rem;
+   font-size: 1.15rem;
+   color: var(--secondary);
+   max-width: 520px;
+   line-height: 1.7;
+   animation: fadeUp 0.7s 0.2s ease both;
+  }
+
+  .hero-actions {
+   margin-top: 2.5rem;
+   display: flex;
+   gap: 1rem;
+   align-items: center;
+   flex-wrap: wrap;
+   justify-content: center;
+   animation: fadeUp 0.7s 0.3s ease both;
+  }
+
+  .btn-primary {
+   padding: 12px 28px;
+   background: var(--accent);
+   color: var(--bg);
+   border-radius: 10px;
+   font-family: 'Syne', sans-serif;
+   font-weight: 700;
+   font-size: 0.9rem;
+   text-decoration: none;
+   transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+   box-shadow: 0 0 0 0 rgba(129, 140, 248, 0);
+  }
+
+  .btn-primary:hover {
+   opacity: 0.9;
+   transform: translateY(-2px);
+   box-shadow: 0 8px 30px rgba(129, 140, 248, 0.3);
+  }
+
+  .btn-ghost {
+   padding: 12px 24px;
+   border: 1px solid var(--border);
+   color: var(--secondary);
+   border-radius: 10px;
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.8rem;
+   text-decoration: none;
+   transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-ghost:hover {
+   border-color: var(--accent);
+   color: var(--primary);
+  }
+
+  /* ── App preview ── */
+  .hero-preview {
+   position: relative;
+   z-index: 1;
+   margin-top: 4rem;
+   width: 100%;
+   max-width: 900px;
+   animation: fadeUp 0.8s 0.4s ease both;
+  }
+
+  .preview-frame {
+   background: var(--card);
+   border: 1px solid var(--border);
+   border-radius: 16px;
+   overflow: hidden;
+   box-shadow:
+    0 0 0 1px rgba(129, 140, 248, 0.05),
+    0 40px 80px rgba(0, 0, 0, 0.6),
+    0 0 80px rgba(129, 140, 248, 0.05);
+  }
+
+  .preview-bar {
+   background: var(--surface);
+   border-bottom: 1px solid var(--border);
+   padding: 12px 16px;
+   display: flex;
+   align-items: center;
+   gap: 12px;
+  }
+
+  .preview-dots {
+   display: flex;
+   gap: 6px;
+  }
+
+  .preview-dots span {
+   width: 10px;
+   height: 10px;
+   border-radius: 50%;
+  }
+
+  .preview-dots span:nth-child(1) {
+   background: #ff5f57;
+  }
+
+  .preview-dots span:nth-child(2) {
+   background: #febc2e;
+  }
+
+  .preview-dots span:nth-child(3) {
+   background: #28c840;
+  }
+
+  .preview-url {
+   flex: 1;
+   background: var(--card);
+   border: 1px solid var(--border);
+   border-radius: 6px;
+   padding: 4px 12px;
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.7rem;
+   color: var(--muted);
+   text-align: center;
+  }
+
+  .preview-body {
+   padding: 20px;
+   min-height: 360px;
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+   gap: 16px;
+  }
+
+  /* Mini calendar */
+  .mini-calendar {
+   background: var(--surface);
+   border: 1px solid var(--border);
+   border-radius: 10px;
+   padding: 16px;
+  }
+
+  .mini-cal-header {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   margin-bottom: 12px;
+  }
+
+  .mini-cal-title {
+   font-family: 'Syne', sans-serif;
+   font-size: 0.8rem;
+   font-weight: 600;
+   color: var(--primary);
+  }
+
+  .mini-cal-grid {
+   display: grid;
+   grid-template-columns: repeat(7, 1fr);
+   gap: 3px;
+  }
+
+  .mini-cal-day-label {
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.55rem;
+   color: var(--muted);
+   text-align: center;
+   padding: 2px 0;
+  }
+
+  .mini-cal-day {
+   aspect-ratio: 1;
+   border-radius: 5px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.6rem;
+   color: var(--secondary);
+   cursor: pointer;
+   position: relative;
+   transition: background 0.15s;
+  }
+
+  .mini-cal-day:hover {
+   background: var(--hover);
+  }
+
+  .mini-cal-day.has-entry {
+   color: var(--primary);
+  }
+
+  .mini-cal-day.today {
+   background: rgba(129, 140, 248, 0.15);
+   color: var(--accent);
+   font-weight: 600;
+  }
+
+  .mini-cal-day.empty {
+   opacity: 0;
+   pointer-events: none;
+  }
+
+  .cal-dots {
+   position: absolute;
+   bottom: 2px;
+   left: 50%;
+   transform: translateX(-50%);
+   display: flex;
+   gap: 2px;
+  }
+
+  .cal-dot {
+   width: 3px;
+   height: 3px;
+   border-radius: 50%;
+  }
+
+  /* Mini right panel */
+  .mini-panel {
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
+  }
+
+  /* Stats bar */
+  .mini-stats {
+   background: var(--surface);
+   border: 1px solid var(--border);
+   border-radius: 10px;
+   padding: 12px 16px;
+   display: grid;
+   grid-template-columns: repeat(3, 1fr);
+   gap: 8px;
+  }
+
+  .mini-stat {
+   text-align: center;
+  }
+
+  .mini-stat-val {
+   font-family: 'Syne', sans-serif;
+   font-size: 1.1rem;
+   font-weight: 700;
+   color: var(--accent);
+  }
+
+  .mini-stat-label {
+   font-size: 0.6rem;
+   color: var(--muted);
+   font-family: 'JetBrains Mono', monospace;
+   margin-top: 2px;
+  }
+
+  /* Entry cards */
+  .mini-entry {
+   background: var(--surface);
+   border: 1px solid var(--border);
+   border-radius: 8px;
+   padding: 10px 12px;
+   border-left-width: 3px;
+   border-left-style: solid;
+  }
+
+  .mini-entry-top {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   margin-bottom: 4px;
+  }
+
+  .mini-entry-type {
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.55rem;
+   padding: 2px 6px;
+   border-radius: 4px;
+  }
+
+  .mini-entry-title {
+   font-size: 0.72rem;
+   font-weight: 500;
+   color: var(--primary);
+  }
+
+  .mini-entry-content {
+   font-size: 0.63rem;
+   color: var(--secondary);
+   line-height: 1.5;
+   margin-top: 3px;
+  }
+
+  /* ── Section layout ── */
+  section {
+   position: relative;
+   z-index: 1;
+   padding: 6rem 2rem;
+  }
+
+  .section-inner {
+   max-width: 1100px;
+   margin: 0 auto;
+  }
+
+  .section-label {
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.7rem;
+   color: var(--accent);
+   letter-spacing: 0.1em;
+   text-transform: uppercase;
+   margin-bottom: 1rem;
+  }
+
+  .section-title {
+   font-family: 'Syne', sans-serif;
+   font-size: clamp(1.8rem, 4vw, 2.8rem);
+   font-weight: 800;
+   letter-spacing: -0.03em;
+   line-height: 1.15;
+   color: var(--primary);
+   max-width: 600px;
+  }
+
+  .section-sub {
+   margin-top: 1rem;
+   font-size: 1rem;
+   color: var(--secondary);
+   max-width: 480px;
+   line-height: 1.7;
+  }
+
+  /* ── Features grid ── */
+  .features-grid {
+   margin-top: 4rem;
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+   gap: 1px;
+   background: var(--border);
+   border: 1px solid var(--border);
+   border-radius: 16px;
+   overflow: hidden;
+  }
+
+  .feature-card {
+   background: var(--card);
+   padding: 2rem;
+   transition: background 0.2s;
+  }
+
+  .feature-card:hover {
+   background: var(--hover);
+  }
+
+  .feature-icon {
+   width: 40px;
+   height: 40px;
+   border-radius: 10px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-size: 1.1rem;
+   margin-bottom: 1.2rem;
+  }
+
+  .feature-title {
+   font-family: 'Syne', sans-serif;
+   font-size: 1rem;
+   font-weight: 700;
+   color: var(--primary);
+   margin-bottom: 0.5rem;
+  }
+
+  .feature-desc {
+   font-size: 0.875rem;
+   color: var(--secondary);
+   line-height: 1.7;
+  }
+
+  /* ── Entry types ── */
+  .types-section {
+   background: var(--surface);
+  }
+
+  .types-grid {
+   margin-top: 3rem;
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+   gap: 16px;
+  }
+
+  .type-card {
+   background: var(--card);
+   border: 1px solid var(--border);
+   border-radius: 12px;
+   padding: 1.5rem;
+   border-top-width: 3px;
+   border-top-style: solid;
+   transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .type-card:hover {
+   transform: translateY(-4px);
+   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .type-emoji {
+   font-size: 1.5rem;
+   margin-bottom: 0.75rem;
+  }
+
+  .type-name {
+   font-family: 'Syne', sans-serif;
+   font-weight: 700;
+   font-size: 1rem;
+   margin-bottom: 0.4rem;
+  }
+
+  .type-desc {
+   font-size: 0.82rem;
+   color: var(--secondary);
+   line-height: 1.6;
+  }
+
+  .type-example {
+   margin-top: 0.75rem;
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.65rem;
+   color: var(--muted);
+   padding: 6px 10px;
+   background: var(--surface);
+   border-radius: 6px;
+  }
+
+  /* ── Heatmap section ── */
+  .heatmap-showcase {
+   margin-top: 3rem;
+   background: var(--card);
+   border: 1px solid var(--border);
+   border-radius: 16px;
+   padding: 2rem;
+  }
+
+  .heatmap-grid {
+   display: flex;
+   gap: 3px;
+   overflow-x: auto;
+   padding-bottom: 4px;
+  }
+
+  .heatmap-col {
+   display: flex;
+   flex-direction: column;
+   gap: 3px;
+  }
+
+  .heatmap-cell {
+   width: 12px;
+   height: 12px;
+   border-radius: 2px;
+   transition: transform 0.15s;
+   cursor: pointer;
+  }
+
+  .heatmap-cell:hover {
+   transform: scale(1.4);
+  }
+
+  .h0 {
+   background: #0e0e1a;
+  }
+
+  .h1 {
+   background: #1a3a2a;
+  }
+
+  .h2 {
+   background: #1e5c3a;
+  }
+
+  .h3 {
+   background: #26a95a;
+  }
+
+  .h4 {
+   background: #3dd68c;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+   text-align: center;
+   padding: 8rem 2rem;
+  }
+
+  .cta-glow {
+   position: absolute;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   width: 500px;
+   height: 300px;
+   background: radial-gradient(ellipse, rgba(129, 140, 248, 0.08) 0%, transparent 70%);
+   pointer-events: none;
+  }
+
+  .cta-title {
+   font-family: 'Syne', sans-serif;
+   font-size: clamp(2rem, 5vw, 3.5rem);
+   font-weight: 800;
+   letter-spacing: -0.03em;
+   color: var(--primary);
+   margin-bottom: 1.5rem;
+  }
+
+  .cta-sub {
+   font-size: 1rem;
+   color: var(--secondary);
+   max-width: 420px;
+   margin: 0 auto 2.5rem;
+   line-height: 1.7;
+  }
+
+  .cta-note {
+   margin-top: 1rem;
+   font-family: 'JetBrains Mono', monospace;
+   font-size: 0.7rem;
+   color: var(--muted);
+  }
+
+  /* ── Footer ── */
+  footer {
+   position: relative;
+   z-index: 1;
+   border-top: 1px solid var(--border);
+   padding: 2rem;
+  }
+
+  .footer-inner {
+   max-width: 1100px;
+   margin: 0 auto;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   flex-wrap: wrap;
+   gap: 1rem;
+  }
+
+  .footer-left {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   font-family: 'Syne', sans-serif;
+   font-weight: 700;
+   font-size: 0.9rem;
+   color: var(--primary);
+  }
+
+  .footer-right {
+   font-size: 0.75rem;
+   color: var(--muted);
+   font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Divider ── */
+  .divider {
+   border: none;
+   border-top: 1px solid var(--border);
+   margin: 0;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+   .preview-body {
+    grid-template-columns: 1fr;
+   }
+
+   .mini-panel {
+    display: none;
+   }
+
+   .mini-calendar {
+    min-height: 280px;
+   }
+
+   .nav-cta span {
+    display: none;
+   }
+  }
+ </style>
+</head>
+
+<body>
+
+ <!-- Nav -->
+ <nav id="nav">
+  <div class="nav-inner">
+   <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">📓</div>
+    <span class="nav-logo-text">Logbook</span>
+   </a>
+   <a class="nav-cta" href="https://logbook-web.up.railway.app">
+    <span>Start logging</span>
+    →
+   </a>
+  </div>
+ </nav>
+
+ <!-- Hero -->
+ <section class="hero">
+  <div class="hero-badge">
+   <span class="hero-badge-dot"></span>
+   Personal daily commit tracker
+  </div>
+
+  <h1 class="hero-title">
+   Every day you grow.<br />
+   <em>Start tracking it.</em>
+  </h1>
+
+  <p class="hero-sub">
+   Logbook is your private developer journal — log what you learn, build, and ship. See your progress as a heatmap.
+   Never forget a day of growth.
+  </p>
+
+  <div class="hero-actions">
+   <a class="btn-primary" href="https://logbook-web.up.railway.app">
+    Open Logbook →
+   </a>
+   <a class="btn-ghost" href="#features">
+    See features
+   </a>
+  </div>
+
+  <!-- App preview -->
+  <div class="hero-preview">
+   <div class="preview-frame">
+    <div class="preview-bar">
+     <div class="preview-dots">
+      <span></span><span></span><span></span>
+     </div>
+     <div class="preview-url">logbook-web.up.railway.app</div>
+    </div>
+    <div class="preview-body">
+     <!-- Mini calendar -->
+     <div class="mini-calendar">
+      <div class="mini-cal-header">
+       <span class="mini-cal-title">February 2026</span>
+       <span style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--muted)">◀ ▶</span>
+      </div>
+      <div class="mini-cal-grid" id="calGrid"></div>
+     </div>
+     <!-- Right panel -->
+     <div class="mini-panel">
+      <div class="mini-stats">
+       <div class="mini-stat">
+        <div class="mini-stat-val">47</div>
+        <div class="mini-stat-label">entries</div>
+       </div>
+       <div class="mini-stat">
+        <div class="mini-stat-val">18</div>
+        <div class="mini-stat-label">active days</div>
+       </div>
+       <div class="mini-stat">
+        <div class="mini-stat-val">5🔥</div>
+        <div class="mini-stat-label">streak</div>
+       </div>
+      </div>
+      <div class="mini-entry" style="border-left-color: var(--skill)">
+       <div class="mini-entry-top">
+        <span class="mini-entry-type" style="background:rgba(52,211,153,0.12);color:var(--skill)">🧠 SKILL</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--muted)">today</span>
+       </div>
+       <div class="mini-entry-title">React Query v5 patterns</div>
+       <div class="mini-entry-content">Learned about staleTime vs gcTime and how to structure query keys for cache
+        invalidation.</div>
+      </div>
+      <div class="mini-entry" style="border-left-color: var(--action)">
+       <div class="mini-entry-top">
+        <span class="mini-entry-type" style="background:rgba(245,158,11,0.12);color:var(--action)">⚡ ACTION</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--muted)">today</span>
+       </div>
+       <div class="mini-entry-title">Deploy to Railway</div>
+       <div class="mini-entry-content">Fix nginx PORT config, push to main, verify healthcheck passes.</div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+ </section>
+
+ <hr class="divider" />
+
+ <!-- Features -->
+ <section id="features">
+  <div class="section-inner">
+   <p class="section-label reveal">// features</p>
+   <h2 class="section-title reveal reveal-delay-1">
+    Built for developers<br />who ship daily.
+   </h2>
+   <p class="section-sub reveal reveal-delay-2">
+    Everything you need to build a consistent practice of logging your growth — without the noise.
+   </p>
+
+   <div class="features-grid">
+    <div class="feature-card reveal">
+     <div class="feature-icon" style="background:rgba(129,140,248,0.1)">📅</div>
+     <div class="feature-title">Calendar View</div>
+     <div class="feature-desc">Navigate your logbook by date. Each day shows coloured dots for your entries. Click any
+      day to view or add entries in a side panel.</div>
+    </div>
+    <div class="feature-card reveal reveal-delay-1">
+     <div class="feature-icon" style="background:rgba(52,211,153,0.1)">🔥</div>
+     <div class="feature-title">GitHub-style Heatmap</div>
+     <div class="feature-desc">A full year at a glance. See your consistency, spot gaps, and feel the satisfaction of a
+      filled-in streak. Your contribution graph, for your life.</div>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+     <div class="feature-icon" style="background:rgba(245,158,11,0.1)">⚡</div>
+     <div class="feature-title">4 Entry Types</div>
+     <div class="feature-desc">Notes, Skills, Actions, and Events. Each type is colour-coded so you can see the shape of
+      your day — learning vs doing vs planning.</div>
+    </div>
+    <div class="feature-card reveal">
+     <div class="feature-icon" style="background:rgba(244,114,182,0.1)">📊</div>
+     <div class="feature-title">Stats Dashboard</div>
+     <div class="feature-desc">Track total entries, active days, and current streak. Understand your patterns without
+      needing a spreadsheet.</div>
+    </div>
+    <div class="feature-card reveal reveal-delay-1">
+     <div class="feature-icon" style="background:rgba(129,140,248,0.1)">🔍</div>
+     <div class="feature-title">Filter & Search</div>
+     <div class="feature-desc">The Entries page lets you filter by type, date range, or search keyword. Find that thing
+      you learned 3 weeks ago instantly.</div>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+     <div class="feature-icon" style="background:rgba(52,211,153,0.1)">🌓</div>
+     <div class="feature-title">Dark & Light Mode</div>
+     <div class="feature-desc">Built dark-first. Switch to light mode when the sun comes up. Your preference is
+      remembered across sessions.</div>
+    </div>
+   </div>
+  </div>
+ </section>
+
+ <hr class="divider" />
+
+ <!-- Entry types -->
+ <section class="types-section">
+  <div class="section-inner">
+   <p class="section-label reveal">// entry types</p>
+   <h2 class="section-title reveal reveal-delay-1">
+    Log anything.<br />Categorise everything.
+   </h2>
+
+   <div class="types-grid">
+    <div class="type-card reveal" style="border-top-color: var(--note)">
+     <div class="type-emoji">📝</div>
+     <div class="type-name" style="color:var(--note)">Note</div>
+     <div class="type-desc">Thoughts, ideas, observations. Anything worth remembering from your day.</div>
+     <div class="type-example">"Interesting talk about eventual consistency in distributed systems."</div>
+    </div>
+    <div class="type-card reveal reveal-delay-1" style="border-top-color: var(--skill)">
+     <div class="type-emoji">🧠</div>
+     <div class="type-name" style="color:var(--skill)">Skill</div>
+     <div class="type-desc">Things you learned, practised, or deepened understanding in.</div>
+     <div class="type-example">"Understood how React's reconciliation algorithm handles keyed lists."</div>
+    </div>
+    <div class="type-card reveal reveal-delay-2" style="border-top-color: var(--action)">
+     <div class="type-emoji">⚡</div>
+     <div class="type-name" style="color:var(--action)">Action</div>
+     <div class="type-desc">Tasks completed, shipped, or in progress. Your daily done list.</div>
+     <div class="type-example">"Shipped the entries filter page. Fixed the nginx PORT issue."</div>
+    </div>
+    <div class="type-card reveal reveal-delay-3" style="border-top-color: var(--event)">
+     <div class="type-emoji">📅</div>
+     <div class="type-name" style="color:var(--event)">Event</div>
+     <div class="type-desc">Meetings, calls, conferences. Time-based entries with start and end times.</div>
+     <div class="type-example">"Team sync 10:00–10:30. Discussed Q1 roadmap priorities."</div>
+    </div>
+   </div>
+  </div>
+ </section>
+
+ <hr class="divider" />
+
+ <!-- Heatmap -->
+ <section>
+  <div class="section-inner">
+   <p class="section-label reveal">// year in review</p>
+   <h2 class="section-title reveal reveal-delay-1">
+    See a whole year<br />of consistency.
+   </h2>
+   <p class="section-sub reveal reveal-delay-2">
+    The heatmap shows every day you logged something. Build a streak. Break it. Build a longer one.
+   </p>
+
+   <div class="heatmap-showcase reveal reveal-delay-2">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+     <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;color:var(--primary)">2026</span>
+     <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted)">Less</span>
+      <div style="display:flex;gap:3px">
+       <div style="width:10px;height:10px;border-radius:2px;background:#0e0e1a;border:1px solid var(--border)"></div>
+       <div style="width:10px;height:10px;border-radius:2px;background:#1a3a2a"></div>
+       <div style="width:10px;height:10px;border-radius:2px;background:#1e5c3a"></div>
+       <div style="width:10px;height:10px;border-radius:2px;background:#26a95a"></div>
+       <div style="width:10px;height:10px;border-radius:2px;background:#3dd68c"></div>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted)">More</span>
+     </div>
+    </div>
+    <div class="heatmap-grid" id="heatmap"></div>
+   </div>
+  </div>
+ </section>
+
+ <hr class="divider" />
+
+ <!-- CTA -->
+ <section class="cta-section">
+  <div class="cta-glow"></div>
+  <div style="position:relative;z-index:1">
+   <p class="section-label reveal" style="display:inline-block">// get started</p>
+   <h2 class="cta-title reveal reveal-delay-1">
+    Start logging today.<br />It takes 30 seconds.
+   </h2>
+   <p class="cta-sub reveal reveal-delay-2">
+    Sign in with Google. No setup. No configuration. Just start writing down what you did today.
+   </p>
+   <div class="reveal reveal-delay-3">
+    <a class="btn-primary" href="https://logbook-web.up.railway.app" style="font-size:1rem;padding:14px 36px">
+     Open Logbook →
+    </a>
+    <p class="cta-note">Free. Private. Yours.</p>
+   </div>
+  </div>
+ </section>
+
+ <!-- Footer -->
+ <footer>
+  <div class="footer-inner">
+   <div class="footer-left">
+    <span>📓</span>
+    Logbook
+   </div>
+   <div class="footer-right">
+    built with Spring Boot + React · deployed on Railway
+   </div>
+  </div>
+ </footer>
+
+ <script>
+  // ── Nav scroll effect ──
+  const nav = document.getElementById('nav')
+  window.addEventListener('scroll', () => {
+   nav.classList.toggle('scrolled', window.scrollY > 20)
+  })
+
+  // ── Scroll reveal ──
+  const observer = new IntersectionObserver((entries) => {
+   entries.forEach(e => {
+    if (e.isIntersecting) {
+     e.target.classList.add('visible')
+     observer.unobserve(e.target)
+    }
+   })
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' })
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+
+  // ── Mini calendar ──
+  const calGrid = document.getElementById('calGrid')
+  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  days.forEach(d => {
+   const el = document.createElement('div')
+   el.className = 'mini-cal-day-label'
+   el.textContent = d
+   calGrid.appendChild(el)
+  })
+
+  // Feb 2026 starts on Sunday (index 6 in Mon-first grid → 6 empty)
+  const entries = {
+   2: [{ c: 'var(--skill)' }],
+   4: [{ c: 'var(--action)' }, { c: 'var(--note)' }],
+   6: [{ c: 'var(--note)' }],
+   9: [{ c: 'var(--skill)' }, { c: 'var(--skill)' }],
+   10: [{ c: 'var(--action)' }],
+   11: [{ c: 'var(--note)' }, { c: 'var(--event)' }],
+   13: [{ c: 'var(--skill)' }],
+   16: [{ c: 'var(--action)' }, { c: 'var(--action)' }],
+   17: [{ c: 'var(--skill)' }],
+   18: [{ c: 'var(--note)' }],
+   19: [{ c: 'var(--skill)' }, { c: 'var(--action)' }],
+   20: [{ c: 'var(--event)' }],
+   23: [{ c: 'var(--action)' }, { c: 'var(--skill)' }],
+   24: [{ c: 'var(--note)' }],
+   25: [{ c: 'var(--skill)' }, { c: 'var(--note)' }],
+   26: [{ c: 'var(--action)' }, { c: 'var(--skill)' }],
+  }
+
+  // 6 empty lead days (Mon–Sat before Feb 1 which is Sunday)
+  for (let i = 0; i < 6; i++) {
+   const el = document.createElement('div')
+   el.className = 'mini-cal-day empty'
+   calGrid.appendChild(el)
+  }
+
+  for (let d = 1; d <= 28; d++) {
+   const el = document.createElement('div')
+   el.className = 'mini-cal-day' + (entries[d] ? ' has-entry' : '') + (d === 26 ? ' today' : '')
+   el.textContent = d
+   if (entries[d]) {
+    const dots = document.createElement('div')
+    dots.className = 'cal-dots'
+    entries[d].slice(0, 3).forEach(e => {
+     const dot = document.createElement('div')
+     dot.className = 'cal-dot'
+     dot.style.background = e.c
+     dots.appendChild(dot)
+    })
+    el.appendChild(dots)
+   }
+   calGrid.appendChild(el)
+  }
+
+  // ── Heatmap ──
+  const heatmap = document.getElementById('heatmap')
+  const levels = [0, 1, 2, 3, 4]
+  // 53 weeks, 7 days
+  for (let w = 0; w < 53; w++) {
+   const col = document.createElement('div')
+   col.className = 'heatmap-col'
+   for (let d = 0; d < 7; d++) {
+    const cell = document.createElement('div')
+    // Simulate realistic activity pattern
+    const rand = Math.random()
+    let level = 0
+    if (rand > 0.45) level = 1
+    if (rand > 0.6) level = 2
+    if (rand > 0.75) level = 3
+    if (rand > 0.88) level = 4
+    // Recent weeks more active
+    if (w > 46) level = Math.min(4, level + 1)
+    cell.className = `heatmap-cell h${level}`
+    col.appendChild(cell)
+   }
+   heatmap.appendChild(col)
+  }
+ </script>
+</body>
+
+</html>
